@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import base64
 import json
 import os
@@ -218,5 +219,71 @@ class CacheInstance:
         result = response.read().decode()
         return json.loads(result)
 
-# if __name__=="__main__":
-#     i = CacheInstance("172.16.196.221", "57772", "USER", "_SYSTEM", "SYS")
+def __main():
+    mainParser = argparse.ArgumentParser()
+
+    mainParser.add_argument('-V', '--verbose', action='store_const', const=1, help='output details')
+    mainParser.add_argument('-U', '--username', type=str, default='_SYSTEM')
+    mainParser.add_argument('-P', '--password', type=str, default='SYS')
+    mainParser.add_argument('-N', '--namespace', type=str, default='USER')
+    specificationGroup = mainParser.add_mutually_exclusive_group()
+    specificationGroup.add_argument('-I', '--instance', type=str, default=None)
+    locationGroup = specificationGroup.add_argument_group('location')
+    locationGroup.add_argument('-H', '--host', type=str)
+    locationGroup.add_argument('-W', '--web-server-port', type=int)
+
+    subParsers = mainParser.add_subparsers(help='cdev commands',dest='function')
+
+    uploadParser = subParsers.add_parser('upload', help='Upload and compile classes or routines')
+    uploadParser.add_argument("files", metavar="F", type=argparse.FileType('r'), nargs="+", help="files to upload")
+
+    downloadParser = subParsers.add_parser('download', help='Download classes or routines')
+    downloadParser.add_argument("names", metavar="N", type=str, nargs="+", help="Classes or routines to download")
+
+    importParser = subParsers.add_parser('import', help='Upload and compile classes or routines')
+    importParser.add_argument("files", metavar="F", type=argparse.FileType('r'), nargs="+", help="Files to import")
+
+    exportParser = subParsers.add_parser('export', help='Upload and compile classes or routines')
+    exportParser.add_argument("-o", "--output", type=argparse.FileType('w'), help='File to output to. STDOUT if not specified.')
+    exportParser.add_argument("names", metavar="N", type=str, nargs="+", help="Classes or routines to export")
+
+    editParser = subParsers.add_parser('edit', help='Download classes')
+    editParser.add_argument("names", metavar="N", type=str, nargs="+", help="Classes or routines to edit")
+
+    listParser = subParsers.add_parser('list', help='list server details')
+    listSubParsers = listParser.add_subparsers(help='list options',dest='listFunction')
+
+    listClassesParser = listSubParsers.add_parser('classes', help='List all classes and routines in namespace')
+    listClassesParser.add_argument('-s','--noSystem',action='store_false', help='hide system classes',dest="system")
+
+    listClassesParser = listSubParsers.add_parser('routines', help='List all classes and routines in namespace')
+    listClassesParser.add_argument('-t','--type',action='append',help='mac|int|obj|inc|bas',dest="types",choices=['obj','mac','int','inc','bas'])
+    listClassesParser.add_argument('-s','--noSystem',action='store_false', help='hide system classes',dest="system")
+
+    listNamespacesParser = listSubParsers.add_parser('namespaces', help='List all classes and routines in namespace')
+
+    results = mainParser.parse_args()
+    kwargs = dict(results._get_kwargs())
+
+    # function = kwargs.pop('function')
+    # if function == 'info':
+    #     info_(**kwargs)
+    # else:
+    #     database = simple_connect(kwargs.pop('instance'),
+    #                    kwargs.pop('host'),
+    #                    kwargs.pop('super_server_port'),
+    #                    kwargs.pop('web_server_port'),
+    #                    kwargs.pop('namespace'),
+    #                    kwargs.pop('username'),
+    #                    kwargs.pop('password'),
+    #                    force=kwargs.pop('force_install'),
+    #                    verbosity=kwargs.pop('verbose'))
+    #     if function:
+    #         getattr(database,function + '_')(**kwargs)
+
+
+if __name__ == "__main__":
+    try:
+        __main()
+    except CDevException as ex:
+        print(ex)
