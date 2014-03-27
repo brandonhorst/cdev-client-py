@@ -32,10 +32,9 @@ class Namespace:
 class CodeEntity:
     def __init__(self, obj):
         self.id = obj['id']
-        if 'content' in obj:
-            self.content = obj['content']
-            if os.linesep != '\r\n':
-                self.content = self.content.replace('\r\n', os.linesep)
+        if 'content' in obj: self.content = obj['content']
+
+    
 
 
 class File(CodeEntity):
