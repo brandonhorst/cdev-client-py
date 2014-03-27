@@ -28,8 +28,17 @@ class TestCDEVServer(unittest.TestCase):
 
         executeresult = self.instance.execute_query(sqlresult.query)
         self.assertTrue(executeresult.success)
-        self.assertIn(sql, executeresult.query.content)
         self.assertIn("Name", executeresult.resultset)
+
+    def test_globals(self):
+        samples = self.get_samples()
+
+        globs = self.instance.get_globals(samples)
+        self.assertIn('oddDEF', [glob.name for glob in globs])
+
+        personglob = [glob for glob in globs if glob.name == 'Sample.PersonD'][0]
+        personglobfull = self.instance.get_global(personglob)
+        self.assertIn('1', personglobfull.content)
 
     def test_classes_and_routines(self):
         samples = self.get_samples()

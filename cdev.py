@@ -27,11 +27,16 @@ class Namespace:
         self.files = obj['files']
         self.xml = obj['xml']
         self.queries = obj['queries']
+        self.globals = obj['globals']
 
 class CodeEntity:
     def __init__(self, obj):
         self.id = obj['id']
-        if 'content' in obj: self.content = obj['content']
+        if 'content' in obj:
+            self.content = obj['content']
+            if os.linesep != '\r\n':
+                self.content = self.content.replace('\r\n', os.linesep)
+
 
 class File(CodeEntity):
     def __init__(self, obj):
@@ -45,11 +50,20 @@ class XML(CodeEntity):
     def __init__(self, obj):
         super().__init__(obj)
 
+class Global(CodeEntity):
+    def __init__(self, obj):
+        super().__init__(obj)
+        self.name = obj['name']
+
 class Query(CodeEntity):
     def __init__(self, obj):
         super().__init__(obj)
         self.plan = obj['plan']
         self.cached = obj['cached']
+
+class Code(CodeEntity):
+    def __init(self, obj):
+        super().__init__(obj)
 
 class Operation:
     def __init__(self, obj):
@@ -72,6 +86,12 @@ class QueryOperation(Operation):
         super().__init__(obj)
         if 'resultset' in obj: self.resultset = obj['resultset']
         if 'query' in obj: self.query = Query(obj['query'])
+
+class CodeOperation(Operation):
+    def __init__(self, obj):
+        super().__init__(obj)
+        if 'code' in obj: self.code = Code(obj['code'])
+        if 'result' in obj: self.result = obj['result']
 
 class CacheInstance:
     def __init__(self, host, web_server_port, username, password):
@@ -179,6 +199,14 @@ class CacheInstance:
         result = self._request(namespace.xml, "PUT", data)
         return XMLOperation(result)
 
+    def get_globals(self, namespace):
+        result = self._request(namespace.globals)
+        return [Global(glob) for glob in result]
+
+    def get_global(self, glob):
+        result = self._request(glob.id)
+        return Global(result)
+
     def add_query(self, namespace, text):
         data = { 'content': text }
         result = self._request(namespace.queries, "PUT", data)
@@ -216,7 +244,7 @@ class CacheInstance:
         except urllib.error.URLError as e:
             print("Error Response: {0}".format(e.read()))
             return None
-        result = response.read().decode()
+        result = response.read().decode("utf8", "ignore")
         return json.loads(result)
 
 def __main():
